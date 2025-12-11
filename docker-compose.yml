@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for Authentication
+  postgres:
+    image: postgres:16-alpine
+    container_name: pappi_auth_postgres
+    environment:
+      POSTGRES_USER: pappi_user
+      POSTGRES_PASSWORD: pappi_password
+      POSTGRES_DB: pappi_auth_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pappi_user -d pappi_auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pappi_network
+
+  # Authentication Backend Service
+  auth_backend:
+    build:
+      context: ./back_pappi_calculator_auth
+      dockerfile: Dockerfile
+    container_name: pappi_auth_backend
+    environment:
+      DATABASE_URL: postgresql://pappi_user:pappi_password@postgres:5432/pappi_auth_db
+      SECRET_KEY: your-secret-key-here-generate-a-random-string-for-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      APP_NAME: "PAPPI Calculator Auth API"
+      DEBUG: "True"
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pappi_network
+    restart: unless-stopped
+
+  # Calculator Backend Service
+  calculator_backend:
+    build:
+      context: ./final_exam_calculator_be
+      dockerfile: Dockerfile
+    container_name: pappi_calculator_backend
+    ports:
+      - "8002:8000"
+    networks:
+      - pappi_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./front-examen-arqsoft
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3000/api
+    container_name: pappi_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - auth_backend
+      - calculator_backend
+    networks:
+      - pappi_network
+    restart: unless-stopped
+
+networks:
+  pappi_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
