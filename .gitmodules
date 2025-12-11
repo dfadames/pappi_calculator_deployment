@@ -1,0 +1,9 @@
+[submodule "front-examen-arqsoft"]
+	path = front-examen-arqsoft
+	url = https://github.com/Zanat07/front-examen-arqsoft.git
+[submodule "back_pappi_calculator_auth"]
+	path = back_pappi_calculator_auth
+	url = https://github.com/UNxchange/back_pappi_calculator_auth.git
+[submodule "final_exam_calculator_be"]
+	path = final_exam_calculator_be
+	url = https://github.com/dfadames/final_exam_calculator_be.git
